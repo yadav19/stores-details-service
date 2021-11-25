@@ -1,8 +1,8 @@
 spring:
   data:
     mongodb:
-      host: 192.168.43.110
+      host: localhost
       port: 27017
-      database: AlbertHeignStores
+      database: AHStores
       repositories:
         type: auto
