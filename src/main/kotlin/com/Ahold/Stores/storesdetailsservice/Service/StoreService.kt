@@ -11,21 +11,47 @@ import org.springframework.http.ResponseEntity
 import java.util.*
 
 import org.springframework.stereotype.Service
+import java.time.LocalDate
 
 @Service
-open class StoreService(private val storesRepo: StoresRepository) {
+class StoreService(private val storesRepo: StoresRepository) {
 
     companion object {
         var log: Logger = LoggerFactory.getLogger(StoreService::class.java)
     }
 
-    fun getAllStores(): List<Stores>{
+    fun getAllStores(refdate: LocalDate?,ff: String?): List<Stores>{
 
-        var tmp: List<Stores> = storesRepo.findAll()
-        if(!tmp.isEmpty())
-            return tmp
+        var ret: List<Stores> = storesRepo.findAll() //.ifEmpty { throw NoDataFoundException("no data found") }
+        if(!ret.isEmpty())
+        {
+
+            // If futureFlag = F then, Return all the stores dateValidFrom <= refdate <=dateValidUntil
+            // if futureFlag = T then, Return all the store  refdate <= dateValidUntil
+
+            if(refdate!=null) {
+                if (ff!! == "F" || ff!! == "f") {
+                    ret.forEach { it1 ->
+                        it1.addressPeriod =
+                            it1.addressPeriod.filter { it2 ->  it2.dateValidFrom<= refdate &&(it2.dateValidUntil != null ||  it2.dateValidUntil!! >= refdate) }
+                    }
+                } else if (ff!! == "t" || ff!! == "T") {
+                    ret.forEach { it1 ->
+                        it1.addressPeriod =
+                            it1.addressPeriod.filter { it2 -> it2.dateValidUntil == null || it2.dateValidUntil!! >= refdate }
+                    }
+                }
+            }
+            ret = ret.filter{it.addressPeriod.size>0}
+            if(ret.size>0) return ret
+            else
+                throw NoDataCreatedException("Queried Data is empty")
+        }
         else
+        {
+            log.error("Database is empty")
             throw NoDataFoundException("DataBase Empty")
+        }
     }
 
     fun getStoreById( storeId: Int): ResponseEntity<Stores>{
@@ -34,8 +60,9 @@ open class StoreService(private val storesRepo: StoresRepository) {
         if(tmp.isPresent)
             return ResponseEntity.ok(tmp?.get())
         else
-            throw NoDataFoundException("id-" + storeId)
+            throw NoDataFoundException("id-" + storeId + ", data not found")
     }
+
 
     fun saveStore( store: Stores): Any {
 

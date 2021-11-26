@@ -19,7 +19,7 @@ import java.util.*
 
 @RestController
 @RequestMapping("/store-service/v1/")
-open class StoresController (private val storeServe: StoreService,private val storesRepo: StoresRepository) {
+open class StoresController (private val storeServe: StoreService) {
 
     companion object {
         var log: Logger = LoggerFactory.getLogger(StoresController::class.java)
@@ -39,32 +39,14 @@ open class StoresController (private val storeServe: StoreService,private val st
         @RequestParam(name = "refDate", required = false) refdate: LocalDate? = null,
         @RequestParam(name = "futureFlag", required = false) ff: String? = "F"
     ): List<Stores> {
-
-        var ret: List<Stores> = storeServe.getAllStores()
-        if(refdate!=null) {
-            if (ff == "F" || ff == "f") {
-                ret.forEach { it1 ->
-                    it1.addressPeriod =
-                        it1.addressPeriod.filter { it2 -> it2.dateValidUntil != null && it2.dateValidUntil!! <= refdate }
-                }
-            } else if (ff == "t" || ff == "T") {
-                ret.forEach { it1 ->
-                    it1.addressPeriod =
-                        it1.addressPeriod.filter { it2 -> it2.dateValidUntil == null || it2.dateValidUntil!! >= refdate }
-                }
-            }
-        }
-        return ret.filter{it.addressPeriod.size>0}
+        return storeServe.getAllStores(refdate,ff)
     }
 
     @GetMapping("/stores/{storeId}")
     fun getStore(
         @PathVariable storeId: Int
     ): ResponseEntity<Stores> {
-
         return storeServe.getStoreById(storeId)
-
     }
-
 
 }
