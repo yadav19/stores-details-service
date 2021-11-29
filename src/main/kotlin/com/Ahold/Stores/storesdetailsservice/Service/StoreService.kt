@@ -32,7 +32,7 @@ class StoreService(private val storesRepo: StoresRepository) {
         // refDate is optional, if null: then return all data
 
         // If futureFlag = F then, Return all the stores dateValidFrom <= refdate <=dateValidUntil ,i.e, Present Active stores
-        // if futureFlag = T then, Return all the store  dateValidFrom >= refdate, i.e., Future Stores to be active
+        // if futureFlag = T then, Return all the store  dateValidFrom >= refdate , i.e., Future Stores to be active
 
 
         if(refdate!=null) {
@@ -49,7 +49,8 @@ class StoreService(private val storesRepo: StoresRepository) {
             }
         }
 
-        ret = ret.filter{it.addressPeriod.size>0}.ifEmpty { throw NoDataCreatedException("Queried Data is empty") }
+
+        ret = ret.filter{it.addressPeriod.isNotEmpty()}.ifEmpty { throw NoDataCreatedException("Queried Data is empty") }
         return ret
         }
 
