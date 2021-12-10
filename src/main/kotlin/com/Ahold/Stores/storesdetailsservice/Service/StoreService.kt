@@ -8,6 +8,8 @@ import com.Ahold.Stores.storesdetailsservice.repository.StoresRepository
 //import org.apache.juli.logging.LogFactory
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import org.springframework.data.mongodb.core.query.Criteria
+import org.springframework.data.mongodb.core.query.Query
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -25,32 +27,33 @@ class StoreService(private val storesRepo: StoresRepository) {
         var log: Logger = LoggerFactory.getLogger(StoreService::class.java)
     }
 
-    fun getAllStores(refdate: LocalDate?,ff: String?): List<Stores>{
+    fun getAllStores(refdate: LocalDate?,ff: Boolean): List<Stores>{
 
         var ret: List<Stores> = storesRepo.findAll().ifEmpty { throw NoDataFoundException("no data found") }
 
         // refDate is optional, if null: then return all data
 
-        // If futureFlag = F then, Return all the stores dateValidFrom <= refdate <=dateValidUntil ,i.e, Present Active stores
-        // if futureFlag = T then, Return all the store  dateValidFrom >= refdate , i.e., Future Stores to be active
+        // If futureFlag = false then, Return all the stores dateValidFrom <= refdate <dateValidUntil ,i.e, Present Active stores
+        // if futureFlag = true then, Return all the store  refdate < dateValidUntil , i.e., Future Stores to be active
+
+//        var query: Query = Query()
+//        query.addCriteria(Criteria.where("addressPeriod.dateValidUntil"))
 
 
-        if(refdate!=null) {
-            if (ff == "F" || ff == "f") {
-                ret.forEach { it1 ->
-                    it1.addressPeriod =
-                        it1.addressPeriod.filter { it2 ->  it2.dateValidFrom<= refdate &&(it2.dateValidUntil == null ||  it2.dateValidUntil!! >= refdate) }
-                }
-            } else if (ff == "t" || ff == "T") {
-                ret.forEach { it1 ->
-                    it1.addressPeriod =
-                        it1.addressPeriod.filter { it2 -> it2.dateValidFrom >= refdate }
-                }
+        if (ff) {
+            ret.forEach { it1 ->
+                it1.addressPeriod =
+                    it1.addressPeriod.filter { it2 ->  it2.dateValidUntil?.isAfter(refdate)?: true}
+            }
+        } else {
+            ret.forEach { it1 ->
+                it1.addressPeriod =
+                    it1.addressPeriod.filter { it2 -> it2.dateValidFrom <= refdate && (it2.dateValidUntil?.isAfter(refdate)?: true ) }
             }
         }
 
 
-        ret = ret.filter{it.addressPeriod.isNotEmpty()}.ifEmpty { throw NoDataCreatedException("Queried Data is empty") }
+        ret = ret.filter{it.addressPeriod.isNotEmpty()}.ifEmpty { throw NoDataFoundException("Queried Data is empty") }
         return ret
         }
 
